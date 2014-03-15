@@ -245,7 +245,8 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 
 		username = tb_username.getText();
 		
-		if (username.length() > 0) {
+		if (username.length() > 0) 
+		{
 			socket = new Socket(host, PORT);
 			din = new DataInputStream( socket.getInputStream() );
 			dout = new DataOutputStream( socket.getOutputStream() );
