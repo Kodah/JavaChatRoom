@@ -243,7 +243,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			System.out.println("\nHost ID not found!\n");
 		}
 
-		username = tb_username.getText();
+		username = tb_username.getText().trim().replace(" ", "_");
 		
 		if (username.length() > 0) 
 		{
@@ -258,7 +258,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			if (success.equals("success")) 
 			{
 				Thread messageListener = new Thread(new ClientWindow(socket));
-				
+				tb_username.setText("");
 				loginScreen.setVisible(false);
 				chatScreen.setVisible(true);
 				messageListener.start();
@@ -278,8 +278,11 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		
 	private static void sendMessage() throws IOException
 	{
-		dout.writeUTF(tb_message.getText());
-		tb_message.setText("");
+		if (tb_message.getText().trim().length() > 0) 
+		{
+			dout.writeUTF(tb_message.getText().trim());
+			tb_message.setText("");
+		}
 	}
 	
 	@Override
