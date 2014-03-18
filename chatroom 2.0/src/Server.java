@@ -15,6 +15,7 @@ public class Server
 		String username;
 		DataInputStream din;
 		DataOutputStream dout;
+
 		ArrayList<User> userList = new ArrayList<User>();
 		
 		try
@@ -38,13 +39,12 @@ public class Server
 			username = din.readUTF();
 			
 			// if first client
-			if (userList.size() == 0) 
-			{
+			if (userList.size() == 0) {
 				User user = new User(username, client);
-				handler = new ClientHandler(client, userList, user);
-				
 				userList.add(user);
+				
 				System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
+				handler = new ClientHandler(client, userList, user);
 				dout.writeUTF("success");
 				handler.start();
 			} 
@@ -58,17 +58,16 @@ public class Server
 					if (userList.get(i).getUsername().equals(username)) 
 					{
 						usernameTaken = true;
-						System.out.println(username + " Has been Rejected *Duplicate Username*" );
+						System.out.println("well shit" + userList.size() );
 						dout.writeUTF("fail");
 					} 
 				} 
-				if (usernameTaken == false) 
-				{
+				if (usernameTaken == false) {
 					User user = new User(username, client);
-					handler = new ClientHandler(client, userList, user);
-					
 					userList.add(user);
+					
 					System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
+					handler = new ClientHandler(client, userList, user);
 					dout.writeUTF("success");
 					handler.start();
 				}
@@ -80,9 +79,9 @@ public class Server
 class ClientHandler extends Thread
 {
 	private Socket client;
+
 	DataInputStream din;
 	DataOutputStream dout;
-	ObjectOutputStream oos;
 	ArrayList<User> userList;
 	User user;
 	
@@ -98,82 +97,54 @@ class ClientHandler extends Thread
 	public void run() 
 	{
 		String received = null;
-		String users = "¥¥_userlist_¥¥\n";
-		Boolean connected = true;
-		
-		for (int i = 0; i < userList.size(); i++) 
-		{
-			users += userList.get(i).getUsername() + "\n";
-		}
-		try 
-		{
-			sentToAll("* "+user.getUsername() + " Entered the chat! * \n", 1);
-			sentToAll(users, 1);
-		} 
-		catch (IOException e1) 
-		{
+		try {
+			sentToAll(user.getUsername() + " Entered the chat! \n", 1);
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 		do
 		{
-			try 
-			{
+			try {
 				received = din.readUTF();
-				
-				if (received.length() > 16 && received.substring(0, 16).equals("¥¥_disconnect_¥¥")) 
-				{
-					users = "¥¥_userlist_¥¥\n";
-					for (int i = 0; i < userList.size(); i++) 
-					{
-						if (userList.get(i).getUsername().equals(received.substring(16))) 
-						{
-							System.out.println("removing user " + userList.get(i).getUsername());
-							userList.get(i).getSocket().close();
-							userList.remove(i);
-							connected = false;
-							
-							for (int j = 0; j < userList.size(); j++) 
-							{
-								users += userList.get(j).getUsername() + "\n";
-							}
-							sentToAll(users, 1);
-							sentToAll("* "+received.substring(16) + " Left the chat! * \n", 1);
-						}
-					}
-				} 
-				else
-					sentToAll(received, 2);
+				//dout.writeUTF(user.getUsername()+": "+ received);
+				sentToAll(received, 2);
 
-			} 
-			catch (IOException e ) 
-			{
+			} catch (IOException e ) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			
-		}while (connected);
+		}while (!received.equals("QUIT"));
+
+		try
+		{
+			System.out.println("Closing down connection...");
+			client.close();
+		}
+		catch(IOException ioEx)
+		{
+			System.out.println("* Disconnection problem! *");
+		}
 	}
 	
-	// type of message 0=user disconnected 1=user connected 2=user chat message 3=array update 
-	void sentToAll(String msg, int typeOfMessage) throws IOException
-	{
-		if (typeOfMessage == 1) 
-		{
-			for (int i = 0; i < userList.size(); i++) 
-			{
+	// type of message 0=user disconnected 1=user connected 2=user chat message 
+	void sentToAll(String msg, int typeOfMessage) throws IOException{
+		
+		if (typeOfMessage == 1) {
+			for (int i = 0; i < userList.size(); i++) {
 				dout = new DataOutputStream( userList.get(i).getSocket().getOutputStream());
 				dout.writeUTF(msg);
 			}
 		}
 		
-		if (typeOfMessage == 2) 
-		{
-			for (int i = 0; i < userList.size(); i++) 
-			{
+		if (typeOfMessage == 2) {
+			for (int i = 0; i < userList.size(); i++) {
 				dout = new DataOutputStream( userList.get(i).getSocket().getOutputStream());
 				dout.writeUTF(user.getUsername() + ": " +msg+"\n");
-				
 			}
 		} 
+		
+		
 	}
 }
 
