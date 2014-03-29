@@ -26,6 +26,11 @@ import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Scanner;
 
 
@@ -46,7 +51,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	public static DataInputStream din;
 	public static DataOutputStream dout;
 	public static ObjectInputStream ois;
-	public static String username;
+	public static String username, password;
 	public static JLabel curUser, lbl_error;
 	
 	public static void main(String[] args) 
@@ -296,30 +301,94 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			System.out.println("\nHost ID not found!\n");
 		}
 
+		///////////////////////////////
+		
+		Connection connection = null;
+		Statement statement = null;
+		ResultSet results = null;		
+		try
+		{
+			Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
+			connection = DriverManager.getConnection(
+								"jdbc:odbc:USERS","","");
+		}
+		catch(ClassNotFoundException cnfEx)
+		{
+			System.out.println("* Unable to load driver! *");
+			System.exit(1);
+		}
+		catch(SQLException sqlEx)
+		{
+			System.out.println(
+							"* Cannot connect to database! *");
+			System.exit(1);
+		}
+		
+		
+		///////////////////////////////
+		
 		username = tb_username.getText().trim().replace(" ", "_");
+		password = tb_password.getText();
 		
 		if (username.length() > 0) 
 		{
-			socket = new Socket(host, PORT);
-			din = new DataInputStream( socket.getInputStream() );
-			dout = new DataOutputStream( socket.getOutputStream() );
+			boolean userFound = false;
 			
-			
-			dout.writeUTF(username);
-			success = (String)din.readUTF();
-			
-			if (success.equals("success")) 
+			try
 			{
-				Thread messageListener = new Thread(new ClientWindow(socket));
-				tb_username.setText("");
-				loginScreen.setVisible(false);
-				chatScreen.setVisible(true);
-				curUser.setText("Logged as " + username);
-				messageListener.start();
+				statement = connection.createStatement();
+				results = statement.executeQuery(
+										"SELECT * FROM Users");	
+			}
+			catch(SQLException sqlEx)
+			{
+				System.out.println("* Cannot execute query! *");
+				System.exit(1);
+			}
+			
+			try 
+			{
+				while (results.next())
+				{
+					if (results.getString("Username").equals(username) && results.getString("Password").equals(password)) 
+					{
+						userFound = true;
+						break;
+					}
+				}
 			} 
-			else 
+			catch (SQLException sqlEx) 
 			{
-				tb_username.setText("Username is taken, sorry.");
+				System.out.println("error loop" + sqlEx);
+				System.exit(1);
+			}
+			
+			if (userFound) 
+			{
+				socket = new Socket(host, PORT);
+				din = new DataInputStream( socket.getInputStream() );
+				dout = new DataOutputStream( socket.getOutputStream() );
+				
+				dout.writeUTF(username);
+				success = (String)din.readUTF();
+				
+				if (success.equals("success")) 
+				{
+					Thread messageListener = new Thread(new ClientWindow(socket));
+					tb_username.setText("");
+					loginScreen.setVisible(false);
+					chatScreen.setVisible(true);
+					curUser.setText("Logged as " + username);
+					messageListener.start();
+				} 
+				else 
+				{
+					tb_username.setText("Username is taken, sorry.");
+				}
+			}
+			else
+			{
+				lbl_error.setText("User not found");
 			}
 		} 
 		else
@@ -346,6 +415,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		{
 			try 
 			{
+				lbl_error.setText("");
 				joinServer();
 			} 
 			catch (Exception e2) 
