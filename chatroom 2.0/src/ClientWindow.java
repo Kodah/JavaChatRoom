@@ -8,6 +8,7 @@ import javax.swing.JButton;
 import javax.swing.SwingConstants;
 
 import java.awt.CardLayout;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -34,18 +35,19 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	private static final long serialVersionUID = 1L;
 	private static JPanel chatScreen;
 	private static JPanel loginScreen;
-	private static JButton send, btn_login, logout;
+	private static JButton send, btn_login, btn_signup, logout;
 	private static JTextArea ta_chat;
 	private static JTextArea ta_users;
 	public static Socket socket;
 	public static JTextField tb_username = new JTextField();
+	public static JTextField tb_password = new JTextField();
 	public static JTextField tb_message = new JTextField();
 	public static InetAddress host;
 	public static DataInputStream din;
 	public static DataOutputStream dout;
 	public static ObjectInputStream ois;
 	public static String username;
-	public static JLabel curUser;
+	public static JLabel curUser, lbl_error;
 	
 	public static void main(String[] args) 
 	{
@@ -184,28 +186,70 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		
 		// Login panel elements 
 		
-		//JTextField tb_username = new JTextField();
+		// text boxes
+		
 		btn_login = new JButton();
+		btn_signup = new JButton();
 		JLabel lbl_username = new JLabel();
+		JLabel lbl_password = new JLabel();
+		lbl_error = new JLabel();
 		GridBagConstraints gbc = new GridBagConstraints();
 		Font myFont = new Font("Serif", Font.BOLD, 18);
-		gbc.insets = new Insets(5, 5, 0, 0);
-		
-		lbl_username.setText("Please enter your username");
+				
+		lbl_username.setText("Username");
 		gbc.gridx = 0;
 		gbc.gridy = 0;
 		loginScreen.add(lbl_username, gbc);
-		
-		gbc.insets.bottom = 10;
+				
+		gbc.insets.bottom = 30;
+		gbc.gridy = 1;
 		tb_username.setColumns(20);
 		tb_username.setHorizontalAlignment(JTextField.CENTER);
 		tb_username.setFont(myFont);
-		gbc.gridy = 1;
 		loginScreen.add(tb_username, gbc);
 		
-		btn_login.setText("Enter");
+		gbc.insets.bottom = 0;
+		lbl_password.setText("Password");
 		gbc.gridy = 2;
-		loginScreen.add(btn_login, gbc);	
+		loginScreen.add(lbl_password, gbc);
+				
+		gbc.insets.bottom = 20;
+		gbc.gridy = 3;
+		tb_password.setColumns(20);
+		tb_password.setHorizontalAlignment(JTextField.CENTER);
+		tb_password.setFont(myFont);
+		loginScreen.add(tb_password, gbc);
+		
+		
+		//buttons
+		gbc.fill = GridBagConstraints.NONE;
+		gbc.insets.right = 200;
+		gbc.insets.left = 200;
+		gbc.weightx = 1;
+		gbc.anchor = GridBagConstraints.EAST;
+		
+		
+		gbc.gridy = 4;
+		btn_login.setText("Enter ");
+		loginScreen.add(btn_login, gbc);
+		
+		gbc.anchor = GridBagConstraints.WEST;
+		//gbc.gridy = 3;
+		btn_signup.setText("Signup");		
+		loginScreen.add(btn_signup, gbc);
+		
+		
+		gbc.insets.bottom = 0;
+		gbc.insets.top = 70;
+		gbc.gridy = 5;
+		gbc.insets.right = 0;
+		gbc.insets.left = 0;
+		gbc.weightx = 0;
+		gbc.anchor = GridBagConstraints.CENTER;
+		lbl_error.setForeground(Color.RED);
+		lbl_error.setText("");
+		loginScreen.add(lbl_error, gbc);
+		
 		btn_login.addActionListener(this);
 		tb_username.addKeyListener(this);
 		
@@ -306,7 +350,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			} 
 			catch (Exception e2) 
 			{
-				tb_username.setText("Connection to server failed.");
+				lbl_error.setText("Connection to server failed.");
 			}
 		}
 		
