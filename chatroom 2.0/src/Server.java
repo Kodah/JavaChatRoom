@@ -62,7 +62,7 @@ public class Server
 						dout.writeUTF("fail");
 					} 
 				} 
-				if (usernameTaken == false) 
+				if (!usernameTaken) 
 				{
 					User user = new User(username, client);
 					handler = new ClientHandler(client, userList, user);
@@ -153,7 +153,7 @@ class ClientHandler extends Thread
 		}while (connected);
 	}
 	
-	// type of message 0=user disconnected 1=user connected 2=user chat message 3=array update 
+	// type of message 1=system message 2=chat message
 	void sentToAll(String msg, int typeOfMessage) throws IOException
 	{
 		if (typeOfMessage == 1) 
@@ -162,6 +162,8 @@ class ClientHandler extends Thread
 			{
 				dout = new DataOutputStream( userList.get(i).getSocket().getOutputStream());
 				dout.writeUTF(msg);
+				
+				System.out.println("wang shaft " + userList.get(i).getUsername() + "" + userList.get(i).getSocket());
 			}
 		}
 		

@@ -301,7 +301,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			System.out.println("\nHost ID not found!\n");
 		}
 
-		///////////////////////////////
+		// make connection to database
 		
 		Connection connection = null;
 		Statement statement = null;
@@ -325,7 +325,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		}
 		
 		
-		///////////////////////////////
+		// query database with log in details
 		
 		username = tb_username.getText().trim().replace(" ", "_");
 		password = tb_password.getText();
@@ -363,7 +363,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				System.exit(1);
 			}
 			
-			if (userFound) 
+			if (userFound) // user is in the database!
 			{
 				socket = new Socket(host, PORT);
 				din = new DataInputStream( socket.getInputStream() );
@@ -376,6 +376,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				{
 					Thread messageListener = new Thread(new ClientWindow(socket));
 					tb_username.setText("");
+					tb_password.setText("");
 					loginScreen.setVisible(false);
 					chatScreen.setVisible(true);
 					curUser.setText("Logged as " + username);
@@ -383,7 +384,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				} 
 				else 
 				{
-					tb_username.setText("Username is taken, sorry.");
+					lbl_error.setText("You are logged in somewhere else.");
 				}
 			}
 			else
@@ -393,7 +394,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		} 
 		else
 		{
-			tb_username.setText("Mustn't be empty");
+			lbl_error.setText("Username must not be empty");
 		}
 		
 		keyboard.close();
@@ -497,7 +498,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			} 
 			catch (Exception e2) 
 			{
-				tb_username.setText("Connection to server failed.");
+				lbl_error.setText("Connection to server failed.");
 			}
 		}
 		if (e.getSource() == tb_message && e.getKeyCode() == KeyEvent.VK_ENTER )
