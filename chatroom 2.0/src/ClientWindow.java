@@ -31,7 +31,6 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Scanner;
 
 
 public class ClientWindow extends JFrame implements ActionListener, Runnable, KeyListener 
@@ -44,13 +43,13 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	private static JTextArea ta_chat;
 	private static JTextArea ta_users;
 	public static Socket socket;
+	public static int typeOfInputStream;
 	public static JTextField tb_username = new JTextField();
 	public static JTextField tb_password = new JTextField();
 	public static JTextField tb_message = new JTextField();
 	public static InetAddress host;
 	public static DataInputStream din;
 	public static DataOutputStream dout;
-	public static ObjectInputStream ois;
 	public static String username, password;
 	public static JLabel curUser, lbl_error;
 	
@@ -257,6 +256,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		
 		btn_login.addActionListener(this);
 		tb_username.addKeyListener(this);
+		tb_password.addKeyListener(this);
 		
 		// close event listener to alert server to remove user and prevent server crash
 		this.addWindowListener(new WindowAdapter()
@@ -288,9 +288,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	public static void joinServer()throws IOException
 	{
 		final int PORT = 1234;
-		Scanner keyboard;
 		String success;
-		keyboard = new Scanner(System.in);
 		
 		try
 		{
@@ -374,7 +372,8 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				
 				if (success.equals("success")) 
 				{
-					Thread messageListener = new Thread(new ClientWindow(socket));
+					Thread messageListener = new Thread(new ClientWindow(socket, 0));
+					
 					tb_username.setText("");
 					tb_password.setText("");
 					loginScreen.setVisible(false);
@@ -396,8 +395,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		{
 			lbl_error.setText("Username must not be empty");
 		}
-		
-		keyboard.close();
 	}
 		
 	private static void sendMessage() throws IOException
@@ -454,34 +451,42 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		}
 				
 	}
-	public ClientWindow (Socket socket) 
+	public ClientWindow (Socket socket, int typeOfInputStream) // 0=dataInputStream, 1=objectInputStream 
 	{
 		ClientWindow.socket = socket;
+		ClientWindow.typeOfInputStream = typeOfInputStream;
 	}
 
 	@Override
 	public void run() 
 	{
-		try 
+		switch (typeOfInputStream) 
 		{
-			din = new DataInputStream( socket.getInputStream() );
-			
-			while (true) 
+		case 0: // dataInputStream receiver
+			try 
 			{
-			// Get the next message
-				String message = din.readUTF();
+				din = new DataInputStream( socket.getInputStream() );
 				
-				if (message.length() > 14 && message.substring(0, 14).equals("¥¥_userlist_¥¥")) 
+				while (true) 
 				{
-					ta_users.setText(message.substring(15));
-				} 
-				else
-				{
-					ta_chat.append(message);
+				// Get the next message
+					String message = din.readUTF();
+					
+					if (message.length() > 14 && message.substring(0, 14).equals("¥¥_userlist_¥¥")) 
+					{
+						ta_users.setText(message.substring(15));
+					} 
+					else
+					{
+						ta_chat.append(message);
+					}
 				}
-			}
+				
+			} catch( IOException e) { break; }
 			
-		} catch( IOException e) { }
+		default:
+			break;
+		}
 	}
 
 	
@@ -490,7 +495,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	// Enter keypress event handlers 
 	public void keyReleased(KeyEvent e) 
 	{
-		if (e.getSource() == tb_username && e.getKeyCode() == KeyEvent.VK_ENTER ) 
+		if ((e.getSource() == tb_username || e.getSource() == tb_password) && e.getKeyCode() == KeyEvent.VK_ENTER ) 
 		{
 			try 
 			{

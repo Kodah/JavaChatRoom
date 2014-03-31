@@ -38,7 +38,7 @@ public class Server
 			username = din.readUTF();
 			
 			// if first client
-			if (userList.size() == 0) 
+			if (userList.isEmpty()) 
 			{
 				User user = new User(username, client);
 				handler = new ClientHandler(client, userList, user);
@@ -156,26 +156,27 @@ class ClientHandler extends Thread
 	// type of message 1=system message 2=chat message
 	void sentToAll(String msg, int typeOfMessage) throws IOException
 	{
-		if (typeOfMessage == 1) 
-		{
-			for (int i = 0; i < userList.size(); i++) 
-			{
-				dout = new DataOutputStream( userList.get(i).getSocket().getOutputStream());
-				dout.writeUTF(msg);
-				
-				System.out.println("wang shaft " + userList.get(i).getUsername() + "" + userList.get(i).getSocket());
-			}
+		switch (typeOfMessage) {
+		case 1:
+			for (User user:userList) 
+				{
+					dout = new DataOutputStream( user.getSocket().getOutputStream());
+					dout.writeUTF(msg);
+					
+					System.out.println("wang shaft " + user.getUsername());
+				}
+			break;
+		case 2:
+			for (User receivingUser:userList) 
+				{
+					dout = new DataOutputStream( receivingUser.getSocket().getOutputStream());
+					dout.writeUTF(user.getUsername() + ": " +msg+"\n");
+					
+				}
+			break;
+		default:
+			break;
 		}
-		
-		if (typeOfMessage == 2) 
-		{
-			for (int i = 0; i < userList.size(); i++) 
-			{
-				dout = new DataOutputStream( userList.get(i).getSocket().getOutputStream());
-				dout.writeUTF(user.getUsername() + ": " +msg+"\n");
-				
-			}
-		} 
 	}
 }
 
