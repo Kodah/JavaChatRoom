@@ -1,3 +1,4 @@
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -9,6 +10,7 @@ import javax.swing.SwingConstants;
 
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -19,6 +21,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.ColorModel;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -90,8 +93,11 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		curUser = new JLabel();
 		JScrollPane chatArea = new JScrollPane(ta_chat); 
 		JScrollPane userArea = new JScrollPane(ta_users); 
-		JPanel buttonsPanel = new JPanel();
-		buttonsPanel.setLayout(new GridBagLayout());
+		JPanel inputArea = new JPanel();
+		JPanel buttonPanel = new JPanel();
+		inputArea.setLayout(new GridBagLayout());
+		buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 1, 1));
+		//buttonsPanel.setBackground(new Color(3));
 		send = new JButton("Send");
 		logout = new JButton("logout");
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -113,30 +119,58 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		myLogotag.setFont(logoFonttag);
 		myLogotag.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		gbc.anchor = GridBagConstraints.FIRST_LINE_END;
+		tb_message.setColumns(30);
+		tb_message.setFont(myFont);	
+		
+		ImageIcon imgIcon = new ImageIcon("cam.gif");
+		JButton getImage = new JButton(imgIcon);
+		
+		ImageIcon audioIcon = new ImageIcon("audio.gif");
+		JButton getAudio = new JButton( audioIcon);
+		
+		ImageIcon vidIcon = new ImageIcon("vid.gif");
+		JButton getVideo = new JButton( vidIcon);
+		
+		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
+
 		gbc.weighty = 1;
 		gbc.weightx = 1;
 		gbc.gridx = 0;
 		gbc.gridy = 0;
 		
-		//create input panel
-		tb_message.setColumns(30);
-		tb_message.setFont(myFont);
-		buttonsPanel.add(tb_message, gbc);
-		gbc.anchor = GridBagConstraints.LAST_LINE_END;
-		gbc.fill = GridBagConstraints.NONE;
+		//create input panel	 
+		//gbc.fill = GridBagConstraints.NONE;
+		inputArea.add(tb_message, gbc);
+		
+		gbc.weightx = 0;
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.FIRST_LINE_END;
+		inputArea.add(send, gbc);
+		gbc.weightx = 1;
+//		gbc.insets.right = 0;
+//		gbc.gridy = 1;
+//		gbc.fill = GridBagConstraints.NONE;
+//		gbc.gridx = 0;
+		buttonPanel.add(getImage);
+//		gbc.gridx = 1;
+		buttonPanel.add(getAudio);
+//		gbc.gridx = 2;
+//		gbc.insets = new Insets(0,0,0,0);
+		buttonPanel.add(getVideo);
+		
+		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
+//		gbc.gri
+		gbc.gridx = 0;
 		gbc.gridy = 1;
-		buttonsPanel.add(send, gbc);
+		inputArea.add(buttonPanel, gbc);
 		
 		//chat area
-		gbc.insets = new Insets(5, 10, 5, 10);
+		gbc.insets = new Insets(2, 2, 2, 2);
 		
 		gbc.fill = GridBagConstraints.BOTH;
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		gbc.weightx = 0.8;
-		gbc.weighty = 0.9;
 		
 		ta_chat.setLineWrap(true);
 		ta_chat.setWrapStyleWord(true);
@@ -146,18 +180,18 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		//user area
 		gbc.gridx = 1;
 		ta_users.setText("user area");
-		gbc.weightx = 0.2;
+		gbc.weightx = 0.4;
 		ta_users.setLineWrap(true);
 		ta_users.setWrapStyleWord(true);
 		chatScreen.add(userArea, gbc);
 	
 		// input area 
-		gbc.weighty = 0.1;
+		gbc.weighty = 0;
 		gbc.gridx = 0;
 		gbc.gridy = 1;
-		chatScreen.add(buttonsPanel, gbc);
+		chatScreen.add(inputArea, gbc);
 		
-		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.fill = GridBagConstraints.NONE;
 		gbc.anchor = GridBagConstraints.PAGE_END;
 		//gbc.weightx = 0.1;
 		//gbc.weighty = 0.1;
@@ -165,17 +199,20 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		gbc.gridy = 1;
 
 		chatScreen.add(logout, gbc);
-		gbc.anchor = GridBagConstraints.PAGE_START;
+//		gbc.anchor = GridBagConstraints.PAGE_START;
 		//gbc.fill = GridBagConstraints.BOTH;
-		
+//		
 		gbc.fill = GridBagConstraints.NONE;		
-		chatScreen.add(myLogo, gbc);
-		gbc.anchor = GridBagConstraints.CENTER;
+//		chatScreen.add(myLogo, gbc);
+		gbc.anchor = GridBagConstraints.PAGE_START;
+		curUser.setText("Logged in as Tom");
 		chatScreen.add(curUser, gbc);
 		
 		logout.addActionListener(this);
 		send.addActionListener(this);
 		tb_message.addKeyListener(this);
+		
+		//ta_chat.setText("<html>Hello every bady</html>");
 	}
 
 	private void setUpLoginPanel() 
@@ -186,7 +223,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		loginScreen.setLayout(new GridBagLayout());
 		
 		add(loginScreen, "Login");
-		loginScreen.setVisible(true);
+		loginScreen.setVisible(false);
 		
 		// Login panel elements 
 		
