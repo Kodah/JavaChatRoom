@@ -29,32 +29,24 @@ import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 
 public class ClientWindow extends JFrame implements ActionListener, Runnable, KeyListener 
 
 {
 	private static final long serialVersionUID = 1L;
-	private static JPanel chatScreen;
-	private static JPanel loginScreen;
-	private static JButton send, btn_login, btn_signup, logout;
-	private static JTextArea ta_chat;
-	private static JTextArea ta_users;
+	private static JPanel chatScreen, loginScreen, signupScreen;
+	private static JButton send, btn_login, btn_signup, logout, btn_submit, btn_goBack;
+	private static JTextArea ta_chat, ta_users;
 	public static Socket socket;
 	public static int typeOfInputStream;
-	public static JTextField tb_username = new JTextField();
-	public static JTextField tb_password = new JTextField();
-	public static JTextField tb_message = new JTextField();
+	public static JTextField tb_username, tb_password, tb_message;
+	public static JTextField tb_newUsername, tb_newPassword, tb_passwordRepeat;
 	public static InetAddress host;
 	public static DataInputStream din;
 	public static DataOutputStream dout;
 	public static String username, password;
-	public static JLabel curUser, lbl_error;
+	public static JLabel curUser, lbl_error, lbl_status;
 	
 	public static void main(String[] args) 
 	{
@@ -69,12 +61,14 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	public ClientWindow() 
 	{
 		setLayout(new CardLayout());
+
 		
-		setUpLoginPanel();
-		setUpChatPanel();
+		setupLoginPanel();
+		setupChatPanel();
+		setupSignUpPanel();
 	}
 
-	private void setUpChatPanel() 
+	private void setupChatPanel() 
 	{
 		// Login panel set up
 		chatScreen = new JPanel();
@@ -86,6 +80,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		// Login panel elements 
 		ta_chat = new JTextArea(10,30);
 		ta_users = new JTextArea(10,50);
+		tb_message = new JTextField(30);
 		
 		ta_chat.setEditable(false);
 		ta_users.setEditable(false);
@@ -119,7 +114,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		myLogotag.setFont(logoFonttag);
 		myLogotag.setHorizontalAlignment(SwingConstants.CENTER);
 		
-		tb_message.setColumns(30);
 		tb_message.setFont(myFont);	
 		
 		ImageIcon imgIcon = new ImageIcon("cam.gif");
@@ -215,7 +209,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		//ta_chat.setText("<html>Hello every bady</html>");
 	}
 
-	private void setUpLoginPanel() 
+	private void setupLoginPanel() 
 	{
 
 		// Login panel set up
@@ -223,7 +217,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		loginScreen.setLayout(new GridBagLayout());
 		
 		add(loginScreen, "Login");
-		loginScreen.setVisible(false);
+		loginScreen.setVisible(true);
 		
 		// Login panel elements 
 		
@@ -231,6 +225,8 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		
 		btn_login = new JButton();
 		btn_signup = new JButton();
+		tb_username = new JTextField(20);
+		tb_password = new JTextField(20);
 		JLabel lbl_username = new JLabel();
 		JLabel lbl_password = new JLabel();
 		lbl_error = new JLabel();
@@ -244,7 +240,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				
 		gbc.insets.bottom = 30;
 		gbc.gridy = 1;
-		tb_username.setColumns(20);
 		tb_username.setHorizontalAlignment(JTextField.CENTER);
 		tb_username.setFont(myFont);
 		loginScreen.add(tb_username, gbc);
@@ -256,7 +251,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				
 		gbc.insets.bottom = 20;
 		gbc.gridy = 3;
-		tb_password.setColumns(20);
 		tb_password.setHorizontalAlignment(JTextField.CENTER);
 		tb_password.setFont(myFont);
 		loginScreen.add(tb_password, gbc);
@@ -292,6 +286,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		loginScreen.add(lbl_error, gbc);
 		
 		btn_login.addActionListener(this);
+		btn_signup.addActionListener(this);
 		tb_username.addKeyListener(this);
 		tb_password.addKeyListener(this);
 		
@@ -321,11 +316,123 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
         });
 	}
 
+	private void setupSignUpPanel()
+	{
+		signupScreen = new JPanel();
+		signupScreen.setLayout(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		
+		add(signupScreen, "Signup");
+		signupScreen.setVisible(false);	
+		
+		tb_newUsername = new JTextField(20);
+		tb_newPassword = new JTextField(20);
+		tb_passwordRepeat = new JTextField(20);
+		JLabel lbl_username = new JLabel("new username:");
+		JLabel lbl_password = new JLabel("new password:");
+		JLabel lbl_passrepeat = new JLabel("repeat password:");
+		lbl_status = new JLabel();
+		btn_submit = new JButton("signup");
+		btn_goBack = new JButton(" back ");
+		
+		gbc.gridwidth = 2;
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		signupScreen.add(lbl_username, gbc);
+		gbc.gridy = 1;
+		gbc.insets.bottom = 20;
+		signupScreen.add(tb_newUsername, gbc);
+		gbc.gridy = 2;
+		gbc.insets.bottom = 0;
+		signupScreen.add(lbl_password, gbc);
+		gbc.gridy = 3;
+		gbc.insets.bottom = 20;
+		signupScreen.add(tb_newPassword, gbc);
+		gbc.gridy = 4;
+		gbc.insets.bottom = 0;
+		signupScreen.add(lbl_passrepeat, gbc);
+		gbc.gridy = 5;
+		signupScreen.add(tb_passwordRepeat, gbc);
+		gbc.insets.bottom = 20;
+		gbc.gridy = 6;
+		gbc.ipady = 15;
+		signupScreen.add(lbl_status, gbc);
+		gbc.gridy = 7;
+		gbc.ipady = 0;
+		gbc.gridwidth = 1;
+		signupScreen.add(btn_goBack, gbc);
+		gbc.gridx = 1;
+		gbc.anchor = GridBagConstraints.FIRST_LINE_END;
+		signupScreen.add(btn_submit, gbc);
+		
+		btn_submit.addActionListener(this);
+		btn_goBack.addActionListener(this);
+	}
+	
 	
 	public static void joinServer()throws IOException
 	{
 		final int PORT = 1234;
-		String success;
+		String serverResponce;
+		
+		try
+		{
+			host = InetAddress.getLocalHost();
+		}
+		catch(UnknownHostException uhEx)
+		{
+			System.out.println("\nHost ID not found!\n");
+		}
+				
+		username = tb_username.getText().trim().replace(" ", "_");
+		password = tb_password.getText();
+		
+		if (username.length() > 0) 
+		{
+			socket = new Socket(host, PORT);
+			din = new DataInputStream( socket.getInputStream() );
+			dout = new DataOutputStream( socket.getOutputStream() );
+			
+			dout.writeUTF("userLoginRequest");
+			
+			dout.writeUTF(username);
+			dout.writeUTF(password);
+			
+			serverResponce = din.readUTF();
+			
+			switch (serverResponce) {
+			case "success":
+				Thread messageListener = new Thread(new ClientWindow(socket, 0));
+				
+				tb_username.setText("");
+				tb_password.setText("");
+				lbl_error.setText("");
+				loginScreen.setVisible(false);
+				chatScreen.setVisible(true);
+				curUser.setText("Logged as " + username);
+				messageListener.start();
+				break;
+			case "Duplicate":
+				lbl_error.setText("You are logged in somewhere else.");
+				break;
+			case "notFound":
+				lbl_error.setText("User not found.");
+				break;
+			default:
+				lbl_error.setText("Error");
+				break;
+			}
+		}
+		else
+		{
+			lbl_error.setText("Username must not be empty");
+		}
+	}
+		
+	private static void signUpNewUser() throws IOException
+	{
+		final int PORT = 1234;
+		String serverResponce;
 		
 		try
 		{
@@ -336,104 +443,56 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			System.out.println("\nHost ID not found!\n");
 		}
 
-		// make connection to database
+		String username = tb_newUsername.getText();
+		String newPassword = tb_newPassword.getText();
+		String passwordRepeat = tb_passwordRepeat.getText();
 		
-		Connection connection = null;
-		Statement statement = null;
-		ResultSet results = null;		
-		try
+		if (newPassword.equals(passwordRepeat)) 
 		{
-			Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
-			connection = DriverManager.getConnection(
-								"jdbc:odbc:USERS","","");
-		}
-		catch(ClassNotFoundException cnfEx)
-		{
-			System.out.println("* Unable to load driver! *");
-			System.exit(1);
-		}
-		catch(SQLException sqlEx)
-		{
-			System.out.println(
-							"* Cannot connect to database! *");
-			System.exit(1);
-		}
-		
-		
-		// query database with log in details
-		
-		username = tb_username.getText().trim().replace(" ", "_");
-		password = tb_password.getText();
-		
-		if (username.length() > 0) 
-		{
-			boolean userFound = false;
-			
-			try
-			{
-				statement = connection.createStatement();
-				results = statement.executeQuery(
-										"SELECT * FROM Users");	
-			}
-			catch(SQLException sqlEx)
-			{
-				System.out.println("* Cannot execute query! *");
-				System.exit(1);
-			}
-			
-			try 
-			{
-				while (results.next())
-				{
-					if (results.getString("Username").equals(username) && results.getString("Password").equals(password)) 
-					{
-						userFound = true;
-						break;
-					}
-				}
-			} 
-			catch (SQLException sqlEx) 
-			{
-				System.out.println("error loop" + sqlEx);
-				System.exit(1);
-			}
-			
-			if (userFound) // user is in the database!
+			if (username.length()>2 && newPassword.length() > 2) 
 			{
 				socket = new Socket(host, PORT);
 				din = new DataInputStream( socket.getInputStream() );
 				dout = new DataOutputStream( socket.getOutputStream() );
 				
-				dout.writeUTF(username);
-				success = (String)din.readUTF();
+				dout.writeUTF("userRegistrationRequest");
 				
-				if (success.equals("success")) 
-				{
-					Thread messageListener = new Thread(new ClientWindow(socket, 0));
-					
-					tb_username.setText("");
-					tb_password.setText("");
-					loginScreen.setVisible(false);
-					chatScreen.setVisible(true);
-					curUser.setText("Logged as " + username);
-					messageListener.start();
-				} 
-				else 
-				{
-					lbl_error.setText("You are logged in somewhere else.");
+				dout.writeUTF(username);
+				dout.writeUTF(newPassword);
+				
+				serverResponce = (String)din.readUTF();
+				
+				switch (serverResponce) {
+				case "success":
+					lbl_status.setForeground(Color.GREEN);
+					lbl_status.setText(String.format("Welcome %s! Sign up successful.", username));
+					tb_newPassword.setText(""); 
+					tb_newUsername.setText("");  
+					tb_passwordRepeat.setText(""); 
+					break;
+				case "username taken":
+					lbl_status.setForeground(Color.RED);
+					lbl_status.setText("That username is taken.");
+					break;
+				default:
+					break;
 				}
 			}
 			else
 			{
-				lbl_error.setText("User not found");
+				lbl_status.setForeground(Color.RED);
+				lbl_status.setText("username and password must "
+						+"be greater than two characters");
 			}
 		} 
-		else
+		else 
 		{
-			lbl_error.setText("Username must not be empty");
+			lbl_status.setText("Passwords do not match");
 		}
+		username = tb_username.getText().trim().replace(" ", "_");
+		password = tb_password.getText();
 	}
-		
+	
 	private static void sendMessage() throws IOException
 	{
 		if (tb_message.getText().trim().length() > 0) 
@@ -442,6 +501,46 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			tb_message.setText("");
 		}
 	}
+	
+	
+	public ClientWindow (Socket socket, int typeOfInputStream) // 0=dataInputStream, 1=objectInputStream 
+	{
+		ClientWindow.socket = socket;
+		ClientWindow.typeOfInputStream = typeOfInputStream;
+	}
+
+	@Override
+	public void run() 
+	{
+		switch (typeOfInputStream) 
+		{
+		case 0: // dataInputStream receiver
+			try 
+			{
+				din = new DataInputStream( socket.getInputStream() );
+				
+				while (true) 
+				{
+				// Get the next message
+					String message = din.readUTF();
+					
+					if (message.length() > 14 && message.substring(0, 14).equals("¥¥_userlist_¥¥")) 
+					{
+						ta_users.setText(message.substring(15));
+					} 
+					else
+					{
+						ta_chat.append(message);
+					}
+				}
+				
+			} catch( IOException e) { break; }
+			
+		default:
+			break;
+		}
+	}
+
 	
 	@Override
 	public void actionPerformed(ActionEvent e) 
@@ -486,48 +585,29 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 				e1.printStackTrace();
 			}
 		}
-				
-	}
-	public ClientWindow (Socket socket, int typeOfInputStream) // 0=dataInputStream, 1=objectInputStream 
-	{
-		ClientWindow.socket = socket;
-		ClientWindow.typeOfInputStream = typeOfInputStream;
-	}
-
-	@Override
-	public void run() 
-	{
-		switch (typeOfInputStream) 
+		if(e.getSource() == btn_signup)
 		{
-		case 0: // dataInputStream receiver
+			loginScreen.setVisible(false);
+			signupScreen.setVisible(true);
+		}
+		if(e.getSource() == btn_goBack)
+		{
+			loginScreen.setVisible(true);
+			signupScreen.setVisible(false);
+		}
+		if (e.getSource() == btn_submit) 
+		{
 			try 
 			{
-				din = new DataInputStream( socket.getInputStream() );
-				
-				while (true) 
-				{
-				// Get the next message
-					String message = din.readUTF();
-					
-					if (message.length() > 14 && message.substring(0, 14).equals("¥¥_userlist_¥¥")) 
-					{
-						ta_users.setText(message.substring(15));
-					} 
-					else
-					{
-						ta_chat.append(message);
-					}
-				}
-				
-			} catch( IOException e) { break; }
-			
-		default:
-			break;
+				signUpNewUser();
+			} catch (IOException e1) 
+			{
+				e1.printStackTrace();
+			}
 		}
+				
 	}
-
 	
-
 	@Override 
 	// Enter keypress event handlers 
 	public void keyReleased(KeyEvent e) 

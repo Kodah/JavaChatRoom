@@ -1,5 +1,10 @@
 import java.io.*;
 import java.net.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 public class Server
@@ -11,11 +16,12 @@ public class Server
 		ServerSocket serverSocket = null;
 		final int PORT = 1234;
 		Socket client;
-		ClientHandler handler;
-		String username;
+		ClientHandler handler ;
+		String username, password, requestType;
 		DataInputStream din;
 		DataOutputStream dout;
 		ArrayList<User> userList = new ArrayList<User>();
+		
 		
 		try
 		{
@@ -30,39 +36,78 @@ public class Server
 		System.out.println("\nServer running...\n");
 		
 		do
-		{
+		{	
+			boolean userFound = false;
+			
 			client = serverSocket.accept();
 			din = new DataInputStream( client.getInputStream());
 			dout = new DataOutputStream(client.getOutputStream());
-			//Wait for client.
-			username = din.readUTF();
 			
-			// if first client
-			if (userList.isEmpty()) 
+			Connection connection = null;
+			try
 			{
-				User user = new User(username, client);
-				handler = new ClientHandler(client, userList, user);
-				
-				userList.add(user);
-				System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
-				dout.writeUTF("success");
-				handler.start();
-			} 
-			else 
+				Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
+				connection = DriverManager.getConnection(
+									"jdbc:odbc:USERS","","");
+			}
+			catch(ClassNotFoundException cnfEx)
 			{
-				// check if username is taken
-				boolean usernameTaken = false;
+				System.out.println("* Unable to load driver! *");
+				System.exit(1);
+			}
+			catch(SQLException sqlEx)
+			{
+				System.out.println(
+								"* Cannot connect to database! *");
+				System.exit(1);
+			}
+			
+			ResultSet results = null;
+			try
+			{
+				Statement statement = connection.createStatement();
+				results = statement.executeQuery(
+										"SELECT * FROM Users");	
+			}
+			catch(SQLException sqlEx)
+			{
+				System.out.println("* Cannot execute query! *");
+				System.exit(1);
+			}
+			
+			//Wait for client.
+			
+			requestType = din.readUTF();
+			System.out.println(requestType);
+			switch (requestType) 
+			{
+			case "userLoginRequest":
+				username = din.readUTF();
+				password = din.readUTF();
 				
-				for (int i = 0; i < userList.size(); i++)
+				System.out.println(username + password);
+				// Check user is in database 
+					
+				try 
 				{
-					if (userList.get(i).getUsername().equals(username)) 
+					while (results.next())
 					{
-						usernameTaken = true;
-						System.out.println(username + " Has been Rejected *Duplicate Username*" );
-						dout.writeUTF("fail");
-					} 
+						if (results.getString("Username").equals(username) && results.getString("Password").equals(password)) 
+						{
+							userFound = true;
+							break;
+						}
+					}
 				} 
-				if (!usernameTaken) 
+				catch (SQLException sqlEx) 
+				{
+					System.out.println("error loop" + sqlEx);
+					System.exit(1);
+				}
+			
+				//
+				// if first client
+				if (userList.isEmpty() && userFound) 
 				{
 					User user = new User(username, client);
 					handler = new ClientHandler(client, userList, user);
@@ -71,13 +116,96 @@ public class Server
 					System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
 					dout.writeUTF("success");
 					handler.start();
+				} 
+				else if (userFound)
+				{
+					// check if username is taken
+					boolean usernameTaken = false;
+					
+					for (int i = 0; i < userList.size(); i++)
+					{
+						if (userList.get(i).getUsername().equals(username)) 
+						{
+							usernameTaken = true;
+							System.out.println(username + " Has been Rejected *Duplicate Username*" );
+							dout.writeUTF("Duplicate");
+						} 
+					} 
+					if (!usernameTaken) 
+					{
+						User user = new User(username, client);
+						handler = new ClientHandler(client, userList, user);
+						
+						userList.add(user);
+						System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
+						dout.writeUTF("success");
+						handler.start();
+					}
+				} 
+				else 
+				{
+					dout.writeUTF("notFound");
+					System.out.println(username + " Has been Rejected *not found in database* " );
 				}
+				break;
+				//
+			case "userRegistrationRequest":
+				
+				username = din.readUTF();
+				password = din.readUTF();
+				
+				try 
+				{
+					while (results.next())
+					{
+						if (results.getString("Username").equals(username)) 
+						{
+							userFound = true;
+							break;
+						}
+					}
+				} 
+				catch (SQLException sqlEx) 
+				{
+					System.out.println("error loop" + sqlEx);
+					System.exit(1);
+				}
+				
+				if (userFound) 
+				{
+					dout.writeUTF("username taken");
+				} 
+				else 
+				{
+					try
+					{
+						Statement statement = connection.createStatement();
+						
+						statement.executeUpdate("INSERT INTO Users VALUES ('"
+															+username+"', '"
+															+password+"');");
+						
+						System.out.println(String.format("%s - Added to Users database", username));
+					}
+					catch(SQLException sqlEx)
+					{
+						System.out.println("* Cannot execute query! *");
+						System.exit(1);
+					}
+					dout.writeUTF("success");
+				}
+				
+				
+				break;
+			default:
+				break;
 			}
+			
+			
 		}while (true);
 	}
-}
 
-class ClientHandler extends Thread
+static class ClientHandler extends Thread
 {
 	private Socket client;
 	DataInputStream din;
@@ -153,10 +281,12 @@ class ClientHandler extends Thread
 		}while (connected);
 	}
 	
+	
 	// type of message 1=system message 2=chat message
 	void sentToAll(String msg, int typeOfMessage) throws IOException
 	{
-		switch (typeOfMessage) {
+		switch (typeOfMessage) 
+		{
 		case 1:
 			for (User user:userList) 
 				{
@@ -176,6 +306,7 @@ class ClientHandler extends Thread
 			break;
 		default:
 			break;
+			}
 		}
 	}
 }
