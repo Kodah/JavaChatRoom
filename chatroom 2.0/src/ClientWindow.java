@@ -62,7 +62,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	{
 		setLayout(new CardLayout());
 
-		
 		setupLoginPanel();
 		setupChatPanel();
 		setupSignUpPanel();
@@ -495,10 +494,19 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	
 	private static void sendMessage() throws IOException
 	{
-		if (tb_message.getText().trim().length() > 0) 
+		String messageText = tb_message.getText();
+		
+		if (messageText.trim().length() > 0) 
 		{
 			dout.writeUTF(tb_message.getText().trim());
-			tb_message.setText("");
+			
+			if (messageText.substring(0, 3).equals("/w ")) 
+			{
+				String messageSplit[] = messageText.split(":");
+				tb_message.setText(messageSplit[0]+": ");
+			}
+			else
+				tb_message.setText("");
 		}
 	}
 	

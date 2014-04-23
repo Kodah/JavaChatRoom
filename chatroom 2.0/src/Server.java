@@ -269,6 +269,39 @@ static class ClientHandler extends Thread
 						}
 					}
 				} 
+				else if (received.substring(0,3).equals("/w "))
+				{
+					String whisperSplit[] = received.split(":");
+					String whisperTarget = whisperSplit[0].substring(3);
+					String whisperMessage = whisperSplit[1];
+					User userTarget = null;
+					boolean targetExists = false;
+					
+					for (User user: userList) 
+					{
+						if (user.getUsername().equals(whisperTarget))
+						{
+							targetExists = true;
+							userTarget = user;
+							break;
+						}
+					}
+					
+					// check if target exists and user is not whispering themself
+					if (targetExists && !whisperTarget.equals(user.getUsername()))
+					{
+						System.out.println(whisperTarget + whisperMessage);
+						sendToTarget(whisperMessage, user, userTarget);
+					}
+					else
+					{
+						System.out.println(whisperTarget+" not Found");
+						whisperMessage = whisperTarget+" not found\n";
+						sendToTarget(whisperMessage, user, userTarget);
+					}
+					
+					
+				}
 				else
 					sentToAll(received, 2);
 
@@ -281,6 +314,22 @@ static class ClientHandler extends Thread
 		}while (connected);
 	}
 	
+	void sendToTarget(String msg, User user, User userTarget) throws IOException
+	{
+		if (userTarget == null)
+		{
+			dout = new DataOutputStream( user.getSocket().getOutputStream());
+			dout.writeUTF(msg);
+		}
+		else
+		{
+			dout = new DataOutputStream( user.getSocket().getOutputStream());
+			dout.writeUTF("Whisper to " +userTarget.getUsername()+ ":" + msg);
+			
+			dout = new DataOutputStream( userTarget.getSocket().getOutputStream());
+			dout.writeUTF("Whisper from "+ user.getUsername()+":"+ msg);
+		}
+	}
 	
 	// type of message 1=system message 2=chat message
 	void sentToAll(String msg, int typeOfMessage) throws IOException
