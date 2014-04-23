@@ -22,7 +22,6 @@ public class Server
 		DataOutputStream dout;
 		ArrayList<User> userList = new ArrayList<User>();
 		
-		
 		try
 		{
 			serverSocket = new ServerSocket(PORT);
@@ -48,11 +47,11 @@ public class Server
 			{
 				Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
 				connection = DriverManager.getConnection(
-									"jdbc:odbc:USERS","","");
+						"jdbc:odbc:USERS","","");
 			}
 			catch(ClassNotFoundException cnfEx)
 			{
-				System.out.println("* Unable to load driver! *");
+				System.out.println("* Unable to load driver! *" + cnfEx.getMessage());
 				System.exit(1);
 			}
 			catch(SQLException sqlEx)
@@ -135,7 +134,7 @@ public class Server
 					{
 						User user = new User(username, client);
 						handler = new ClientHandler(client, userList, user);
-						
+												
 						userList.add(user);
 						System.out.println("\nNew client: '"+ user.getUsername() + "' accepted.\n");
 						dout.writeUTF("success");
@@ -298,9 +297,14 @@ static class ClientHandler extends Thread
 						System.out.println(whisperTarget+" not Found");
 						whisperMessage = whisperTarget+" not found\n";
 						sendToTarget(whisperMessage, user, userTarget);
+						sendFileToClient(user.getSocket());
 					}
 					
 					
+				}
+				else if (received.equals("wanka"))
+				{
+					sendFileToClient(user.getSocket());
 				}
 				else
 					sentToAll(received, 2);
@@ -355,8 +359,40 @@ static class ClientHandler extends Thread
 			break;
 		default:
 			break;
-			}
 		}
 	}
+	
+	void sendFileToClient(Socket socket) throws IOException
+	{
+		Socket mediaSocket = null;
+		InetAddress host = InetAddress.getLocalHost();
+
+	    mediaSocket = new Socket(host, 1235);
+		
+	    File file = new File("src/serverFolder/cuckoo.au");
+	    // Get the size of the file
+	    long length = file.length();
+	    if (length > Integer.MAX_VALUE) {
+	        System.out.println("File is too large.");
+	    }
+	    byte[] bytes = new byte[(int) length];
+	    FileInputStream fis = new FileInputStream(file);
+	    BufferedInputStream bis = new BufferedInputStream(fis);
+	    BufferedOutputStream out = new BufferedOutputStream(mediaSocket.getOutputStream());
+
+	    int count;
+
+	    while ((count = bis.read(bytes)) > 0) {
+	        out.write(bytes, 0, count);
+	    }
+
+	    out.flush();
+	    out.close();
+	    fis.close();
+	    bis.close();
+	    mediaSocket.close();
+	}
+	
+}
 }
 

@@ -1,6 +1,12 @@
+import javax.media.ControllerEvent;
+import javax.media.ControllerListener;
+import javax.media.Manager;
+import javax.media.Player;
+import javax.media.RealizeCompleteEvent;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -8,8 +14,11 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.SwingConstants;
 
+import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
@@ -22,21 +31,29 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.ColorModel;
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URI;
 import java.net.UnknownHostException;
 
 
-public class ClientWindow extends JFrame implements ActionListener, Runnable, KeyListener 
+public class ClientWindow extends JFrame implements ActionListener, Runnable, KeyListener, ControllerListener
 
 {
 	private static final long serialVersionUID = 1L;
+	private static JFrame mediaFrame;
 	private static JPanel chatScreen, loginScreen, signupScreen;
-	private static JButton send, btn_login, btn_signup, logout, btn_submit, btn_goBack;
+	private static JButton send, btn_login, btn_signup, logout, btn_submit, btn_goBack, getAudio;
 	private static JTextArea ta_chat, ta_users;
 	public static Socket socket;
 	public static int typeOfInputStream;
@@ -47,15 +64,22 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	public static DataOutputStream dout;
 	public static String username, password;
 	public static JLabel curUser, lbl_error, lbl_status;
+	private File file;
+	private Player player;
 	
 	public static void main(String[] args) 
 	{
 		ClientWindow frame =  new ClientWindow();
-		
+				
 		frame.setTitle("Chat");
 		frame.setSize(600, 500);
 		frame.setVisible(true);
 		frame.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		
+		mediaFrame = new JFrame ("Media");
+		mediaFrame.setSize(600, 500);
+		mediaFrame.setVisible(false);
+		mediaFrame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
 	}
 	
 	public ClientWindow() 
@@ -119,7 +143,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		JButton getImage = new JButton(imgIcon);
 		
 		ImageIcon audioIcon = new ImageIcon("audio.gif");
-		JButton getAudio = new JButton( audioIcon);
+		getAudio = new JButton( audioIcon);
 		
 		ImageIcon vidIcon = new ImageIcon("vid.gif");
 		JButton getVideo = new JButton( vidIcon);
@@ -201,6 +225,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		curUser.setText("Logged in as Tom");
 		chatScreen.add(curUser, gbc);
 		
+		getAudio.addActionListener(this);
 		logout.addActionListener(this);
 		send.addActionListener(this);
 		tb_message.addKeyListener(this);
@@ -548,7 +573,126 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			break;
 		}
 	}
+	
+	public static void requestMedia() throws IOException
+	{
+		ServerSocket serverSocket = null;
 
+	    try {
+	        serverSocket = new ServerSocket(1235);
+	    } catch (IOException ex) {
+	        System.out.println("Can't setup server on this port number. ");
+	    }
+		
+	    Socket mediaSocket = null;
+	    InputStream is = null;
+	    FileOutputStream fos = null;
+	    BufferedOutputStream bos = null;
+	    int bufferSize = 0;
+	    
+	    try 
+	    {
+	    	mediaSocket = serverSocket.accept();
+	    } 
+	    catch (IOException ex) {
+	        System.out.println("Can't accept client connection. ");
+	    }
+
+	    try 
+	    {
+	        is = mediaSocket.getInputStream();
+
+	        bufferSize = mediaSocket.getReceiveBufferSize();
+	        System.out.println("Buffer size: " + bufferSize);
+	    } 
+	    catch (IOException ex) 
+	    {
+	        System.out.println("Can't get socket input stream. ");
+	    }
+
+	    try 
+	    {
+	        fos = new FileOutputStream("src/clientFolder/cuckoo.au");
+	        bos = new BufferedOutputStream(fos);
+
+	    } 
+	    catch (FileNotFoundException ex) 
+	    {
+	        System.out.println("File not found. ");
+	    }
+
+	    byte[] bytes = new byte[bufferSize];
+
+	    int count;
+
+	    while ((count = is.read(bytes)) > 0) 
+	    {
+	        bos.write(bytes, 0, count);
+	    }
+
+	    bos.flush();
+	    bos.close();
+	    is.close();
+	    mediaSocket.close();
+	    serverSocket.close();
+	}
+	private void createPlayer() throws Exception
+   	{
+		try
+		{
+			file = new File("src/serverFolder/cuckoo.wav");
+			if (!file.exists())
+				throw new FileNotFoundException();
+		}
+		catch(FileNotFoundException fnfEx)
+		{
+			JOptionPane.showMessageDialog(this,
+				"File not found!", "Invalid file name",
+				JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+   		if (player != null)
+     	{
+   			Component visualComponent =
+           			player.getVisualComponent();
+   			Component controlsComponent =
+   	               	player.getControlPanelComponent();
+   			Container pane = mediaFrame.getContentPane();
+   			
+     		player.stop();
+ 			pane.remove(visualComponent); //
+     		pane.remove(controlsComponent); //
+     	}
+		URI uri = file.toURI();
+		player = Manager.createPlayer(uri.toURL());
+
+		player.addControllerListener(this);
+		player.start();
+	}
+
+	public void controllerUpdate(ControllerEvent e)
+	{
+		Container pane = mediaFrame.getContentPane(); //Note!!!
+		
+       	if (e instanceof RealizeCompleteEvent)
+		{
+			Component visualComponent =
+               			player.getVisualComponent();
+			
+     		if (visualComponent != null)
+				pane.add(visualComponent, BorderLayout.CENTER);
+
+         	Component controlsComponent =
+               	player.getControlPanelComponent();
+
+         	if (controlsComponent != null)
+				pane.add(controlsComponent, BorderLayout.SOUTH);
+         	
+     		player.start();
+			pane.doLayout();
+		}
+	}	
 	
 	@Override
 	public void actionPerformed(ActionEvent e) 
@@ -609,6 +753,31 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 			{
 				signUpNewUser();
 			} catch (IOException e1) 
+			{
+				e1.printStackTrace();
+			}
+		}
+		if(e.getSource() == getAudio)
+		{
+			try 
+			{	
+				mediaFrame.setVisible(true);
+				
+				try
+				{
+		 			createPlayer();
+				}
+				catch (Exception otherEx)
+				{
+		         	JOptionPane.showMessageDialog(this,
+		            	"Unable to load file!", "Invalid file type",
+		           		 JOptionPane.ERROR_MESSAGE );
+		     	}
+				
+				sendMessage();
+				requestMedia();
+			} 
+			catch (Exception e1) 
 			{
 				e1.printStackTrace();
 			}
