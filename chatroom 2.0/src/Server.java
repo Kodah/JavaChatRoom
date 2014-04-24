@@ -45,15 +45,10 @@ public class Server
 			Connection connection = null;
 			try
 			{
-				Class.forName("sun.jdbc.odbc.JdbcOdbcDriver");
 				connection = DriverManager.getConnection(
 						"jdbc:odbc:USERS","","");
 			}
-			catch(ClassNotFoundException cnfEx)
-			{
-				System.out.println("* Unable to load driver! *" + cnfEx.getMessage());
-				System.exit(1);
-			}
+
 			catch(SQLException sqlEx)
 			{
 				System.out.println(
@@ -268,7 +263,7 @@ static class ClientHandler extends Thread
 						}
 					}
 				} 
-				else if (received.substring(0,3).equals("/w "))
+				else if (received.length() > 3 && received.substring(0,3).equals("/w "))
 				{
 					String whisperSplit[] = received.split(":");
 					String whisperTarget = whisperSplit[0].substring(3);
@@ -297,14 +292,21 @@ static class ClientHandler extends Thread
 						System.out.println(whisperTarget+" not Found");
 						whisperMessage = whisperTarget+" not found\n";
 						sendToTarget(whisperMessage, user, userTarget);
-						sendFileToClient(user.getSocket());
 					}
 					
 					
 				}
-				else if (received.equals("wanka"))
+				else if (received.equals("¥¥_Audio_¥¥"))
 				{
-					sendFileToClient(user.getSocket());
+					sendFileToClient(user.getSocket(), "cuckoo.au");
+				}
+				else if (received.equals("¥¥_Video_¥¥"))
+				{
+					sendFileToClient(user.getSocket(), "MoonWalk.mpeg");
+				}
+				else if (received.equals("¥¥_Image_¥¥"))
+				{
+					sendFileToClient(user.getSocket(), "hatman.gif");
 				}
 				else
 					sentToAll(received, 2);
@@ -362,14 +364,14 @@ static class ClientHandler extends Thread
 		}
 	}
 	
-	void sendFileToClient(Socket socket) throws IOException
+	void sendFileToClient(Socket socket, String fileName) throws IOException
 	{
 		Socket mediaSocket = null;
 		InetAddress host = InetAddress.getLocalHost();
 
 	    mediaSocket = new Socket(host, 1235);
 		
-	    File file = new File("src/serverFolder/cuckoo.au");
+	    File file = new File("src/serverFolder/"+fileName);
 	    // Get the size of the file
 	    long length = file.length();
 	    if (length > Integer.MAX_VALUE) {

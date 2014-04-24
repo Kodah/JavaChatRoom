@@ -12,7 +12,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JButton;
+import javax.swing.JTextPane;
 import javax.swing.SwingConstants;
+
+import com.sun.media.MediaPlayer;
+import com.sun.media.rtsp.protocol.SetupMessage;
 
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
@@ -47,14 +51,17 @@ import java.net.URI;
 import java.net.UnknownHostException;
 
 
-public class ClientWindow extends JFrame implements ActionListener, Runnable, KeyListener, ControllerListener
+public class ClientWindow extends JFrame implements ActionListener, Runnable, 
+									KeyListener, ControllerListener
 
 {
 	private static final long serialVersionUID = 1L;
 	private static JFrame mediaFrame;
-	private static JPanel chatScreen, loginScreen, signupScreen;
-	private static JButton send, btn_login, btn_signup, logout, btn_submit, btn_goBack, getAudio;
+	private static JPanel chatScreen, loginScreen, signupScreen, imagePanel;
+	private static JButton send, btn_login, btn_signup, logout, 
+							btn_submit, btn_goBack, getAudio, getVideo, getImage;
 	private static JTextArea ta_chat, ta_users;
+	private static JTextPane tp_chat;
 	public static Socket socket;
 	public static int typeOfInputStream;
 	public static JTextField tb_username, tb_password, tb_message;
@@ -63,7 +70,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	public static DataInputStream din;
 	public static DataOutputStream dout;
 	public static String username, password;
-	public static JLabel curUser, lbl_error, lbl_status;
+	public static JLabel curUser, lbl_error, lbl_status, lblimage;
 	private File file;
 	private Player player;
 	
@@ -79,7 +86,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		mediaFrame = new JFrame ("Media");
 		mediaFrame.setSize(600, 500);
 		mediaFrame.setVisible(false);
-		mediaFrame.setDefaultCloseOperation (JFrame.EXIT_ON_CLOSE);
 	}
 	
 	public ClientWindow() 
@@ -140,13 +146,13 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		tb_message.setFont(myFont);	
 		
 		ImageIcon imgIcon = new ImageIcon("cam.gif");
-		JButton getImage = new JButton(imgIcon);
+		getImage = new JButton(imgIcon);
 		
 		ImageIcon audioIcon = new ImageIcon("audio.gif");
 		getAudio = new JButton( audioIcon);
 		
 		ImageIcon vidIcon = new ImageIcon("vid.gif");
-		JButton getVideo = new JButton( vidIcon);
+		getVideo = new JButton( vidIcon);
 		
 		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
 		gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -225,7 +231,10 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		curUser.setText("Logged in as Tom");
 		chatScreen.add(curUser, gbc);
 		
+		getVideo.addActionListener(this);
 		getAudio.addActionListener(this);
+		getImage.addActionListener(this);
+		
 		logout.addActionListener(this);
 		send.addActionListener(this);
 		tb_message.addKeyListener(this);
@@ -392,8 +401,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		btn_submit.addActionListener(this);
 		btn_goBack.addActionListener(this);
 	}
-	
-	
+
 	public static void joinServer()throws IOException
 	{
 		final int PORT = 1234;
@@ -517,24 +525,31 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		password = tb_password.getText();
 	}
 	
-	private static void sendMessage() throws IOException
+	private static void sendMessage(String message) throws IOException
 	{
-		String messageText = tb_message.getText();
 		
-		if (messageText.trim().length() > 0) 
+		if (!message.equals(""))
 		{
-			dout.writeUTF(tb_message.getText().trim());
+			dout.writeUTF(message);
+		}
+		else 
+		{
+			String messageText = tb_message.getText();	
 			
-			if (messageText.substring(0, 3).equals("/w ")) 
+			if (messageText.trim().length() > 0) 
 			{
-				String messageSplit[] = messageText.split(":");
-				tb_message.setText(messageSplit[0]+": ");
+				dout.writeUTF(tb_message.getText().trim());
+				
+				if (messageText.length()> 3 && messageText.substring(0, 3).equals("/w ")) 
+				{
+					String messageSplit[] = messageText.split(":");
+					tb_message.setText(messageSplit[0]+": ");
+				}
+				else
+					tb_message.setText("");
 			}
-			else
-				tb_message.setText("");
 		}
 	}
-	
 	
 	public ClientWindow (Socket socket, int typeOfInputStream) // 0=dataInputStream, 1=objectInputStream 
 	{
@@ -574,13 +589,16 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		}
 	}
 	
-	public static void requestMedia() throws IOException
+	public static void requestMedia(String fileName) throws IOException
 	{
 		ServerSocket serverSocket = null;
 
-	    try {
+	    try 
+	    {
 	        serverSocket = new ServerSocket(1235);
-	    } catch (IOException ex) {
+	    } 
+	    catch (IOException ex) 
+	    {
 	        System.out.println("Can't setup server on this port number. ");
 	    }
 		
@@ -612,7 +630,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 
 	    try 
 	    {
-	        fos = new FileOutputStream("src/clientFolder/cuckoo.au");
+	        fos = new FileOutputStream("src/clientFolder/"+fileName);
 	        bos = new BufferedOutputStream(fos);
 
 	    } 
@@ -627,6 +645,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 
 	    while ((count = is.read(bytes)) > 0) 
 	    {
+	    	System.out.println(count);
 	        bos.write(bytes, 0, count);
 	    }
 
@@ -636,11 +655,11 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 	    mediaSocket.close();
 	    serverSocket.close();
 	}
-	private void createPlayer() throws Exception
+	private void createPlayer(String fileName) throws Exception
    	{
 		try
 		{
-			file = new File("src/serverFolder/cuckoo.wav");
+			file = new File("src/clientFolder/"+fileName);
 			if (!file.exists())
 				throw new FileNotFoundException();
 		}
@@ -654,15 +673,20 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		
    		if (player != null)
      	{
-   			Component visualComponent =
-           			player.getVisualComponent();
+   			Container pane = mediaFrame.getContentPane();
+   			player.stop();
    			Component controlsComponent =
    	               	player.getControlPanelComponent();
-   			Container pane = mediaFrame.getContentPane();
    			
-     		player.stop();
- 			pane.remove(visualComponent); //
-     		pane.remove(controlsComponent); //
+     		pane.remove(controlsComponent); 
+     		
+   			if (player.getVisualComponent() != null)
+   			{
+   				Component visualComponent =
+           			player.getVisualComponent();
+
+   				pane.remove(visualComponent); //
+   			}
      	}
 		URI uri = file.toURI();
 		player = Manager.createPlayer(uri.toURL());
@@ -670,10 +694,47 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		player.addControllerListener(this);
 		player.start();
 	}
+	
+	
+	private void createImageFrame(String fileName) 
+	{
+		imagePanel = new JPanel(new BorderLayout());
+		lblimage = new JLabel(new ImageIcon("src/clientFolder/"+fileName));
+		imagePanel.add(lblimage);
+		
+		if (lblimage.isShowing())
+		{
+			mediaFrame.remove(imagePanel);
+		}
+		
+		if (player != null)
+     	{
+   			Container pane = mediaFrame.getContentPane();
+   			player.stop();
+   			Component controlsComponent =
+   	               	player.getControlPanelComponent();
+
+			Component visualComponent =
+           			player.getVisualComponent();
+
+			pane.remove(visualComponent); 
+			pane.remove(controlsComponent); 
+     	}
+		
+		mediaFrame.add(imagePanel);
+		mediaFrame.pack();
+		mediaFrame.setVisible(true);
+	}
+	
 
 	public void controllerUpdate(ControllerEvent e)
 	{
-		Container pane = mediaFrame.getContentPane(); //Note!!!
+		if (lblimage.isShowing())
+		{
+			mediaFrame.remove(imagePanel);
+		}
+		
+		Container pane = mediaFrame.getContentPane();
 		
        	if (e instanceof RealizeCompleteEvent)
 		{
@@ -689,11 +750,54 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
          	if (controlsComponent != null)
 				pane.add(controlsComponent, BorderLayout.SOUTH);
          	
+         	mediaFrame.pack();
      		player.start();
 			pane.doLayout();
 		}
 	}	
 	
+	public void placeholder(String fileName, String mediaType)
+	{
+		File file = new File("src/clientFolder/"+fileName);
+		
+		if(!file.exists()) 
+		{
+			try 
+			{
+				sendMessage(mediaType);
+				requestMedia(fileName);
+			} 
+			catch (IOException e1) 
+			{
+				e1.printStackTrace();
+			}
+		}
+		
+		try 
+		{				
+			try
+			{
+				if (mediaType.equals("¥¥_Image_¥¥"))
+					createImageFrame(fileName);
+				else
+					createPlayer(fileName);
+	 			
+	 			mediaFrame.setVisible(true);
+			}
+			catch (Exception otherEx)
+			{
+	         	JOptionPane.showMessageDialog(this,
+	            	"Unable to load file!", "Invalid file type",
+	           		 JOptionPane.ERROR_MESSAGE );
+	     	}
+			
+		} 
+		catch (Exception e1) 
+		{
+			e1.printStackTrace();
+		}
+	}
+
 	@Override
 	public void actionPerformed(ActionEvent e) 
 	{
@@ -730,7 +834,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		{
 			try 
 			{
-				sendMessage();
+				sendMessage("");
 			} 
 			catch (IOException e1) 
 			{
@@ -759,28 +863,15 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		}
 		if(e.getSource() == getAudio)
 		{
-			try 
-			{	
-				mediaFrame.setVisible(true);
-				
-				try
-				{
-		 			createPlayer();
-				}
-				catch (Exception otherEx)
-				{
-		         	JOptionPane.showMessageDialog(this,
-		            	"Unable to load file!", "Invalid file type",
-		           		 JOptionPane.ERROR_MESSAGE );
-		     	}
-				
-				sendMessage();
-				requestMedia();
-			} 
-			catch (Exception e1) 
-			{
-				e1.printStackTrace();
-			}
+			placeholder("cuckoo.au", "¥¥_Audio_¥¥");
+		}
+		if(e.getSource() == getVideo)
+		{
+			placeholder("MoonWalk.mpeg", "¥¥_Video_¥¥");
+		}
+		if(e.getSource() == getImage)
+		{
+			placeholder("hatman.gif", "¥¥_Image_¥¥");
 		}
 				
 	}
@@ -804,7 +895,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable, Ke
 		{
 			try 
 			{
-				sendMessage();
+				sendMessage("");
 			} 
 			catch (IOException e1) 
 			{
