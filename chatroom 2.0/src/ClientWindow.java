@@ -14,7 +14,14 @@ import javax.swing.JTextField;
 import javax.swing.JButton;
 import javax.swing.JTextPane;
 import javax.swing.SwingConstants;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
+import com.sun.beans.editors.ColorEditor;
 import com.sun.media.MediaPlayer;
 import com.sun.media.rtsp.protocol.SetupMessage;
 
@@ -49,6 +56,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 
 public class ClientWindow extends JFrame implements ActionListener, Runnable, 
@@ -61,7 +71,10 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 	private static JButton send, btn_login, btn_signup, logout, 
 							btn_submit, btn_goBack, getAudio, getVideo, getImage;
 	private static JTextArea ta_chat, ta_users;
+	
 	private static JTextPane tp_chat;
+	private static StyledDocument chatDoc;
+	
 	public static Socket socket;
 	public static int typeOfInputStream;
 	public static JTextField tb_username, tb_password, tb_message;
@@ -108,14 +121,20 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		
 		// Login panel elements 
 		ta_chat = new JTextArea(10,30);
-		ta_users = new JTextArea(10,50);
+		tp_chat = new JTextPane();
+		chatDoc = tp_chat.getStyledDocument();
+		
+		ta_users = new JTextArea(10,50);		
 		tb_message = new JTextField(30);
 		
 		ta_chat.setEditable(false);
+		tp_chat.setEditable(false);
+		
 		ta_users.setEditable(false);
 		
 		curUser = new JLabel();
-		JScrollPane chatArea = new JScrollPane(ta_chat); 
+//		JScrollPane chatArea = new JScrollPane(ta_chat); 
+		JScrollPane chatArea = new JScrollPane(tp_chat); 
 		JScrollPane userArea = new JScrollPane(ta_users); 
 		JPanel inputArea = new JPanel();
 		JPanel buttonPanel = new JPanel();
@@ -128,7 +147,8 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		Font myFont = new Font("Serif", Font.BOLD, 18); 
 		Font chatFont = new Font("Garamond Pro", Font.BOLD, 14); 
 		
-		ta_chat.setFont(chatFont);
+//		ta_chat.setFont(chatFont);
+		tp_chat.setFont(chatFont);
 		Font logoFont = new Font("buxton sketch", Font.BOLD, 28);
 		JLabel myLogo = new JLabel("TJIM");
 		
@@ -492,6 +512,13 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 				dout.writeUTF(username);
 				dout.writeUTF(newPassword);
 				
+				Random ran = new Random();
+				int x = ran.nextInt(5);
+				String[] coloursArray = new String[]{"Black", "Blue", "Cyan",
+											"Green", "Orange"};
+				
+				dout.writeUTF(coloursArray[x]);
+				
 				serverResponce = (String)din.readUTF();
 				
 				switch (serverResponce) {
@@ -577,8 +604,28 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 						ta_users.setText(message.substring(15));
 					} 
 					else
-					{
-						ta_chat.append(message);
+					{	
+						if (message.substring(0, 10).equals("ее_Whisper"))
+						{
+							append(message.substring(3), Color.MAGENTA, 0);
+						}
+						else if (message.substring(0, 4).equals("ее_*"))
+						{
+							append(message.substring(3), Color.GRAY, 0);
+						}
+						else
+						{
+							Map<String, Color> colourPicker = new HashMap<String, Color>();
+							String[] messageSplit = message.split(" ", 2);
+							
+							colourPicker.put("BLACK", Color.BLACK);
+							colourPicker.put("BLUE", Color.BLUE);
+							colourPicker.put("CYAN", Color.CYAN);
+							colourPicker.put("GREEN", Color.GREEN);
+							colourPicker.put("ORANGE", Color.ORANGE);							
+							
+							append(messageSplit[1], colourPicker.get(messageSplit[0]), 1);
+						}
 					}
 				}
 				
@@ -588,6 +635,35 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 			break;
 		}
 	}
+	
+	public void append(String message, Color colour, int type) {
+		   try {
+		      Document doc = tp_chat.getDocument();
+		      		      
+		      StyleContext context = new StyleContext();
+			  Style style = context.addStyle("test", null);
+			  StyleConstants.setForeground(style, colour);
+
+			  if (type==0)
+			  {
+				  doc.insertString(doc.getLength(), message, style);
+			  }
+			  else
+			  {
+				  String messageSplit[] = message.split(" ", 2);
+			      
+			      doc.insertString(doc.getLength(), messageSplit[0], style);
+			      
+			      StyleConstants.setForeground(style, Color.BLACK);
+			      
+			      doc.insertString(doc.getLength(), " "+messageSplit[1], style);
+			  }
+			  
+		      
+		   } catch(BadLocationException exc) {
+		      exc.printStackTrace();
+		   }
+		}
 	
 	public static void requestMedia(String fileName) throws IOException
 	{
@@ -729,7 +805,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 
 	public void controllerUpdate(ControllerEvent e)
 	{
-		if (lblimage.isShowing())
+		if (imagePanel != null && lblimage.isShowing())
 		{
 			mediaFrame.remove(imagePanel);
 		}

@@ -78,6 +78,7 @@ public class Server
 			case "userLoginRequest":
 				username = din.readUTF();
 				password = din.readUTF();
+				String colour = null;
 				
 				System.out.println(username + password);
 				// Check user is in database 
@@ -88,6 +89,7 @@ public class Server
 					{
 						if (results.getString("Username").equals(username) && results.getString("Password").equals(password)) 
 						{
+							colour = results.getString("Colour");
 							userFound = true;
 							break;
 						}
@@ -103,7 +105,7 @@ public class Server
 				// if first client
 				if (userList.isEmpty() && userFound) 
 				{
-					User user = new User(username, client);
+					User user = new User(username, client, colour);
 					handler = new ClientHandler(client, userList, user);
 					
 					userList.add(user);
@@ -127,7 +129,7 @@ public class Server
 					} 
 					if (!usernameTaken) 
 					{
-						User user = new User(username, client);
+						User user = new User(username, client, colour);
 						handler = new ClientHandler(client, userList, user);
 												
 						userList.add(user);
@@ -145,8 +147,11 @@ public class Server
 				//
 			case "userRegistrationRequest":
 				
+				String newUserColour;
+				
 				username = din.readUTF();
 				password = din.readUTF();
+				newUserColour = din.readUTF();
 				
 				try 
 				{
@@ -177,7 +182,12 @@ public class Server
 						
 						statement.executeUpdate("INSERT INTO Users VALUES ('"
 															+username+"', '"
-															+password+"');");
+															+password+"', '"
+															+newUserColour+"');");
+						System.out.println("INSERT INTO Users VALUES ('"
+								+username+"', '"
+								+password+"', '"
+								+newUserColour+"');");
 						
 						System.out.println(String.format("%s - Added to Users database", username));
 					}
@@ -229,7 +239,7 @@ static class ClientHandler extends Thread
 		}
 		try 
 		{
-			sentToAll("* "+user.getUsername() + " Entered the chat! * \n", 1);
+			sentToAll("¥¥_*"+user.getUsername() + " Entered the chat! * \n", 1);
 			sentToAll(users, 1);
 		} 
 		catch (IOException e1) 
@@ -259,13 +269,13 @@ static class ClientHandler extends Thread
 								users += userList.get(j).getUsername() + "\n";
 							}
 							sentToAll(users, 1);
-							sentToAll("* "+received.substring(16) + " Left the chat! * \n", 1);
+							sentToAll("¥¥_*"+received.substring(16) + " Left the chat! * \n", 1);
 						}
 					}
 				} 
 				else if (received.length() > 3 && received.substring(0,3).equals("/w "))
 				{
-					String whisperSplit[] = received.split(":");
+					String whisperSplit[] = received.split(":", 2);
 					String whisperTarget = whisperSplit[0].substring(3);
 					String whisperMessage = whisperSplit[1];
 					User userTarget = null;
@@ -291,9 +301,62 @@ static class ClientHandler extends Thread
 					{
 						System.out.println(whisperTarget+" not Found");
 						whisperMessage = whisperTarget+" not found\n";
-						sendToTarget(whisperMessage, user, userTarget);
+						sendToTarget("¥¥_*"+whisperMessage, user, null);
 					}
 					
+					
+				}
+				else if (received.length() > 3 && received.substring(0,3).equals("/c "))
+				{
+					String colour = received.substring(3).toUpperCase().trim();
+					System.out.println(colour);
+					
+					if (colour.matches("BLACK|BLUE|CYAN|GREEN|ORANGE")) 
+					{
+						
+						Connection connection = null;
+						try
+						{
+							connection = DriverManager.getConnection(
+									"jdbc:odbc:USERS","","");
+						}
+
+						catch(SQLException sqlEx)
+						{
+							System.out.println(
+											"* Cannot connect to database! *");
+							System.exit(1);
+						}
+						
+						try
+						{
+							Statement statement = connection.createStatement();
+							statement.executeUpdate("UPDATE Users SET Colour ='"
+														+colour+"' WHERE Username ='"
+														+user.getUsername()+"';");
+
+						}
+						catch(SQLException sqlEx)
+						{
+							System.out.println("* Cannot execute query! *");
+							System.exit(1);
+						}
+						
+						System.out.println(colour);
+						for (User user: userList) 
+						{
+							if (this.user.getUsername().equals(user.getUsername()))
+							{
+								this.user.setColour(colour);
+								sendToTarget("¥¥_*Color Changed to " + colour + "\n", user, null);
+								break;
+							}
+						}
+					}
+					else 
+					{
+						sendToTarget("¥¥_*Invalid colour\n", user, null);
+					}
 					
 				}
 				else if (received.equals("¥¥_Audio_¥¥"))
@@ -330,10 +393,10 @@ static class ClientHandler extends Thread
 		else
 		{
 			dout = new DataOutputStream( user.getSocket().getOutputStream());
-			dout.writeUTF("Whisper to " +userTarget.getUsername()+ ":" + msg);
+			dout.writeUTF("¥¥_Whisper to " +userTarget.getUsername()+ ":" + msg+"\n");
 			
 			dout = new DataOutputStream( userTarget.getSocket().getOutputStream());
-			dout.writeUTF("Whisper from "+ user.getUsername()+":"+ msg);
+			dout.writeUTF("¥¥_Whisper from "+ user.getUsername()+":"+ msg+"\n");
 		}
 	}
 	
@@ -355,7 +418,7 @@ static class ClientHandler extends Thread
 			for (User receivingUser:userList) 
 				{
 					dout = new DataOutputStream( receivingUser.getSocket().getOutputStream());
-					dout.writeUTF(user.getUsername() + ": " +msg+"\n");
+					dout.writeUTF(user.getColour()+" "+user.getUsername() + ": " +msg+"\n");
 					
 				}
 			break;
