@@ -133,21 +133,18 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		ta_users.setEditable(false);
 		
 		curUser = new JLabel();
-//		JScrollPane chatArea = new JScrollPane(ta_chat); 
 		JScrollPane chatArea = new JScrollPane(tp_chat); 
 		JScrollPane userArea = new JScrollPane(ta_users); 
 		JPanel inputArea = new JPanel();
 		JPanel buttonPanel = new JPanel();
 		inputArea.setLayout(new GridBagLayout());
 		buttonPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 1, 1));
-		//buttonsPanel.setBackground(new Color(3));
 		send = new JButton("Send");
 		logout = new JButton("logout");
 		GridBagConstraints gbc = new GridBagConstraints();
 		Font myFont = new Font("Serif", Font.BOLD, 18); 
 		Font chatFont = new Font("Garamond Pro", Font.BOLD, 14); 
 		
-//		ta_chat.setFont(chatFont);
 		tp_chat.setFont(chatFont);
 		Font logoFont = new Font("buxton sketch", Font.BOLD, 28);
 		JLabel myLogo = new JLabel("TJIM");
@@ -183,7 +180,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		gbc.gridy = 0;
 		
 		//create input panel	 
-		//gbc.fill = GridBagConstraints.NONE;
 		inputArea.add(tb_message, gbc);
 		
 		gbc.weightx = 0;
@@ -191,19 +187,11 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		gbc.anchor = GridBagConstraints.FIRST_LINE_END;
 		inputArea.add(send, gbc);
 		gbc.weightx = 1;
-//		gbc.insets.right = 0;
-//		gbc.gridy = 1;
-//		gbc.fill = GridBagConstraints.NONE;
-//		gbc.gridx = 0;
 		buttonPanel.add(getImage);
-//		gbc.gridx = 1;
 		buttonPanel.add(getAudio);
-//		gbc.gridx = 2;
-//		gbc.insets = new Insets(0,0,0,0);
 		buttonPanel.add(getVideo);
 		
 		gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-//		gbc.gri
 		gbc.gridx = 0;
 		gbc.gridy = 1;
 		inputArea.add(buttonPanel, gbc);
@@ -236,17 +224,12 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		
 		gbc.fill = GridBagConstraints.NONE;
 		gbc.anchor = GridBagConstraints.PAGE_END;
-		//gbc.weightx = 0.1;
-		//gbc.weighty = 0.1;
 		gbc.gridx = 1;
 		gbc.gridy = 1;
 
 		chatScreen.add(logout, gbc);
-//		gbc.anchor = GridBagConstraints.PAGE_START;
-		//gbc.fill = GridBagConstraints.BOTH;
-//		
+
 		gbc.fill = GridBagConstraints.NONE;		
-//		chatScreen.add(myLogo, gbc);
 		gbc.anchor = GridBagConstraints.PAGE_START;
 		curUser.setText("Logged in as Tom");
 		chatScreen.add(curUser, gbc);
@@ -258,8 +241,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		logout.addActionListener(this);
 		send.addActionListener(this);
 		tb_message.addKeyListener(this);
-		
-		//ta_chat.setText("<html>Hello every bady</html>");
 	}
 
 	private void setupLoginPanel() 
@@ -322,7 +303,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		loginScreen.add(btn_login, gbc);
 		
 		gbc.anchor = GridBagConstraints.WEST;
-		//gbc.gridy = 3;
 		btn_signup.setText("Signup");		
 		loginScreen.add(btn_signup, gbc);
 		
@@ -514,8 +494,8 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 				
 				Random ran = new Random();
 				int x = ran.nextInt(5);
-				String[] coloursArray = new String[]{"Black", "Blue", "Cyan",
-											"Green", "Orange"};
+				String[] coloursArray = new String[]{"BLACK", "BLUE", "CYAN",
+											"GREEN", "ORANGE"};
 				
 				dout.writeUTF(coloursArray[x]);
 				
@@ -832,7 +812,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		}
 	}	
 	
-	public void placeholder(String fileName, String mediaType)
+	public void mediaFilter(String fileName, String mediaType)
 	{
 		File file = new File("src/clientFolder/"+fileName);
 		
@@ -889,8 +869,6 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 				lbl_error.setText("Connection to server failed.");
 			}
 		}
-		
-		
 		if (e.getSource() == logout)
 		{
 			try 
@@ -939,15 +917,15 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		}
 		if(e.getSource() == getAudio)
 		{
-			placeholder("cuckoo.au", "¥¥_Audio_¥¥");
+			mediaFilter("cuckoo.au", "¥¥_Audio_¥¥");
 		}
 		if(e.getSource() == getVideo)
 		{
-			placeholder("MoonWalk.mpeg", "¥¥_Video_¥¥");
+			mediaFilter("MoonWalk.mpeg", "¥¥_Video_¥¥");
 		}
 		if(e.getSource() == getImage)
 		{
-			placeholder("hatman.gif", "¥¥_Image_¥¥");
+			mediaFilter("hatman.gif", "¥¥_Image_¥¥");
 		}
 				
 	}

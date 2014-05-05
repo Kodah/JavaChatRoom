@@ -410,8 +410,6 @@ static class ClientHandler extends Thread
 				{
 					dout = new DataOutputStream( user.getSocket().getOutputStream());
 					dout.writeUTF(msg);
-					
-					System.out.println("wang shaft " + user.getUsername());
 				}
 			break;
 		case 2:
