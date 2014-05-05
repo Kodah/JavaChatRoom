@@ -8,6 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -19,12 +20,6 @@ import javax.swing.text.Document;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
-import javax.swing.text.StyledDocument;
-
-import com.sun.beans.editors.ColorEditor;
-import com.sun.media.MediaPlayer;
-import com.sun.media.rtsp.protocol.SetupMessage;
-
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -41,7 +36,6 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.ColorModel;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -50,7 +44,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -71,18 +64,18 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 	private static JButton send, btn_login, btn_signup, logout, 
 							btn_submit, btn_goBack, getAudio, getVideo, getImage;
 	private static JTextArea ta_chat, ta_users;
+	public static JPasswordField tb_password;
 	
 	private static JTextPane tp_chat;
-	private static StyledDocument chatDoc;
-	
 	public static Socket socket;
 	public static int typeOfInputStream;
-	public static JTextField tb_username, tb_password, tb_message;
+	public static JTextField tb_username, tb_message;
 	public static JTextField tb_newUsername, tb_newPassword, tb_passwordRepeat;
 	public static InetAddress host;
 	public static DataInputStream din;
 	public static DataOutputStream dout;
-	public static String username, password;
+	public static String username;
+	static char[] password;
 	public static JLabel curUser, lbl_error, lbl_status, lblimage;
 	private File file;
 	private Player player;
@@ -122,7 +115,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		// Login panel elements 
 		ta_chat = new JTextArea(10,30);
 		tp_chat = new JTextPane();
-		chatDoc = tp_chat.getStyledDocument();
+		tp_chat.getStyledDocument();
 		
 		ta_users = new JTextArea(10,50);		
 		tb_message = new JTextField(30);
@@ -260,7 +253,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		btn_login = new JButton();
 		btn_signup = new JButton();
 		tb_username = new JTextField(20);
-		tb_password = new JTextField(20);
+		tb_password = new JPasswordField(20);
 		JLabel lbl_username = new JLabel();
 		JLabel lbl_password = new JLabel();
 		lbl_error = new JLabel();
@@ -417,7 +410,10 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 		}
 				
 		username = tb_username.getText().trim().replace(" ", "_");
-		password = tb_password.getText();
+		password = tb_password.getPassword();
+		
+		String passString = new String(password);
+		
 		
 		if (username.length() > 0) 
 		{
@@ -428,7 +424,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 			dout.writeUTF("userLoginRequest");
 			
 			dout.writeUTF(username);
-			dout.writeUTF(password);
+			dout.writeUTF(passString);
 			
 			serverResponce = din.readUTF();
 			
@@ -448,7 +444,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 				lbl_error.setText("You are logged in somewhere else.");
 				break;
 			case "notFound":
-				lbl_error.setText("User not found.");
+				lbl_error.setText("Incorrect sign in details.");
 				break;
 			default:
 				lbl_error.setText("Error");
@@ -529,7 +525,7 @@ public class ClientWindow extends JFrame implements ActionListener, Runnable,
 			lbl_status.setText("Passwords do not match");
 		}
 		username = tb_username.getText().trim().replace(" ", "_");
-		password = tb_password.getText();
+		password = tb_password.getPassword();
 	}
 	
 	private static void sendMessage(String message) throws IOException
